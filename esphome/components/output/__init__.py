@@ -26,6 +26,7 @@ FloatOutput = output_ns.class_('FloatOutput', BinaryOutput)
 FloatOutputPtr = FloatOutput.operator('ptr')
 
 # Actions
+ToggleAction = output_ns.class_('ToggleAction', automation.Action)
 TurnOffAction = output_ns.class_('TurnOffAction', automation.Action)
 TurnOnAction = output_ns.class_('TurnOnAction', automation.Action)
 SetLevelAction = output_ns.class_('SetLevelAction', automation.Action)
@@ -54,6 +55,12 @@ def register_output(var, config):
 BINARY_OUTPUT_ACTION_SCHEMA = maybe_simple_id({
     cv.Required(CONF_ID): cv.use_id(BinaryOutput),
 })
+
+
+@automation.register_action('output.toggle', ToggleAction, BINARY_OUTPUT_ACTION_SCHEMA)
+def output_toggle_to_code(config, action_id, template_arg, args):
+    paren = yield cg.get_variable(config[CONF_ID])
+    yield cg.new_Pvariable(action_id, template_arg, paren)
 
 
 @automation.register_action('output.turn_on', TurnOnAction, BINARY_OUTPUT_ACTION_SCHEMA)

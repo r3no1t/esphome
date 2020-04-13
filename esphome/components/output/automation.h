@@ -8,6 +8,16 @@
 namespace esphome {
 namespace output {
 
+template<typename... Ts> class ToggleAction : public Action<Ts...> {
+ public:
+  explicit ToggleAction(BinaryOutput *output) : output_(output) {}
+
+  void play(Ts... x) override { this->output_->toggle(); }
+
+ protected:
+  BinaryOutput *output_;
+};
+
 template<typename... Ts> class TurnOffAction : public Action<Ts...> {
  public:
   TurnOffAction(BinaryOutput *output) : output_(output) {}

@@ -17,6 +17,8 @@ namespace output {
 
 class BinaryOutput {
  public:
+  virtual ~BinaryOutput() {}
+
   /// Set the inversion state of this binary output.
   void set_inverted(bool inverted) { this->inverted_ = inverted; }
 
@@ -29,9 +31,17 @@ class BinaryOutput {
    */
   void set_power_supply(power_supply::PowerSupply *power_supply) { this->power_.set_parent(power_supply); }
 #endif
-
+  /// Toggle this binary output.
+  virtual void toggle() {
+    this->state_ = !this->state_;
+    if (this->state_)
+      turn_on();
+    else
+      turn_off();
+  }
   /// Enable this binary output.
   virtual void turn_on() {
+    this->state_ = true;
 #ifdef USE_POWER_SUPPLY
     this->power_.request();
 #endif
@@ -40,6 +50,7 @@ class BinaryOutput {
 
   /// Disable this binary output.
   virtual void turn_off() {
+    this->state_ = false;
 #ifdef USE_POWER_SUPPLY
     this->power_.unrequest();
 #endif
@@ -58,6 +69,8 @@ class BinaryOutput {
 #ifdef USE_POWER_SUPPLY
   power_supply::PowerSupplyRequester power_{};
 #endif
+  /// The current reported state of the binary output.
+  bool state_{false};
 };
 
 }  // namespace output
