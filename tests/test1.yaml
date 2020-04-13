@@ -1649,3 +1649,13 @@ text_sensor:
     name: "SSID"
   bssid:
     name: "BSSID"
+- platform: amg88
+  name: "Grid Eye 1"
+  frame_rate: 10fps
+  send_initial_state: True
+  offset_degrees: 0
+  min_change_pixel: 2
+  min_change_degrees: 1.1
+  i2c_id: bus_a
+  address: 0x68
+  update_interval: 500ms
