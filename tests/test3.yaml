@@ -615,6 +615,22 @@ cover:
     close_action:
       - switch.turn_on: gpio_switch2
     close_duration: 4.5min
+  - platform: time_based
+    name: Time Based Cover with Tilt
+    stop_action:
+      - switch.turn_off: motor
+    open_action:
+      - switch.turn_on: direction
+      - switch.turn_on: motor
+    close_action:
+      - switch.turn_off: direction
+      - switch.turn_on: motor
+    open_duration: 48s
+    close_duration: 47s
+    tilt_duration: 2s
+    dir_change_delay: 1000ms
+    publish_interval: 500ms
+    has_built_in_endstop: True
   - platform: template
     name: Template Cover with Tilt
     tilt_lambda: "return 0.5;"

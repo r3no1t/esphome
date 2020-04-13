@@ -88,7 +88,7 @@ const char *cover_operation_to_str(CoverOperation op);
  * Covers currently have three properties:
  *  - position - The current position of the cover from 0.0 (fully closed) to 1.0 (fully open).
  *    For covers with only binary OPEN/CLOSED position this will always be either 0.0 or 1.0
- *  - tilt - The tilt value of the cover from 0.0 (closed) to 1.0 (closed)
+ *  - tilt - The tilt value of the cover from 0.0 (closed) to 1.0 (open)
  *  - current_operation - The operation the cover is currently performing, this can
  *    be one of IDLE, OPENING and CLOSING.
  *
