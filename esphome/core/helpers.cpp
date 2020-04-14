@@ -140,11 +140,11 @@ void reserve_global_json_build_buffer(size_t required_size) {
 }
 
 ParseOnOffState parse_on_off(const char *str, const char *on, const char *off) {
-  if (on == nullptr && strcasecmp(str, "on") == 0)
+  if (on == nullptr && ((strcasecmp(str, "on") == 0) || (strcasecmp(str, "true") == 0)))
     return PARSE_ON;
   if (on != nullptr && strcasecmp(str, on) == 0)
     return PARSE_ON;
-  if (off == nullptr && strcasecmp(str, "off") == 0)
+  if (off == nullptr && ((strcasecmp(str, "off") == 0) || (strcasecmp(str, "false") == 0)))
     return PARSE_OFF;
   if (off != nullptr && strcasecmp(str, off) == 0)
     return PARSE_OFF;
