@@ -734,6 +734,28 @@ sensor:
       name: "PM2.5"
     pm_10_0:
       name: "PM10.0"
+  - platform: adc121s021 
+    name: "Power Meter"
+    data_pin: GPIO5
+    cs_pin: GPIO16
+    clk_pin: GPIO17
+    hw_timer_id: 1
+    sample_time: 100us
+    sample_duration: 40ms
+    sample_pause: 1000ms
+    filter_frequency: 500Hz
+    update_interval: 1s
+    filters:
+      - offset: -3.0
+      - multiply: 0.70196
+      - calibrate_linear:
+        - 0.0 -> 0.0
+        - 40.0 -> 48.0
+        - 80.0 -> 96.0
+      - sliding_window_moving_average:
+          window_size: 15
+          send_every: 15
+          send_first_at: 15
 
 esp32_touch:
   setup_mode: False

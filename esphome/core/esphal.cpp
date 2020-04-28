@@ -15,6 +15,22 @@ void ICACHE_RAM_ATTR __attachInterruptArg(uint8_t pin, void (*)(void *), void *f
 };
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+// hack to build ISR safe copies of the hw timer functions
+#include "esp32-hal-timer.c"
+void ICACHE_RAM_ATTR ISRTimerAlarmEnable(hw_timer_t *timer){ timer->dev->config.alarm_en = 1; }
+void ICACHE_RAM_ATTR ISRTimerAlarmWrite(hw_timer_t *timer, uint64_t alarm_value, bool autoreload){
+    timer->dev->alarm_high = (uint32_t) (alarm_value >> 32);
+    timer->dev->alarm_low = (uint32_t) alarm_value;
+    timer->dev->config.autoreload = autoreload;
+}
+void ICACHE_RAM_ATTR ISRTimerRestart(hw_timer_t *timer){
+    timer->dev->config.enable = 0;
+    timer->dev->reload = 1;
+    timer->dev->config.enable = 1;
+}
+#endif
+
 namespace esphome {
 
 static const char *TAG = "esphal";

@@ -27,6 +27,13 @@
 #undef abs
 #endif
 
+
+#ifdef ARDUINO_ARCH_ESP32
+void ICACHE_RAM_ATTR ISRTimerAlarmEnable(hw_timer_t *timer);
+void ICACHE_RAM_ATTR ISRTimerAlarmWrite(hw_timer_t *timer, uint64_t alarm_value, bool autoreload);
+void ICACHE_RAM_ATTR ISRTimerRestart(hw_timer_t *timer);
+#endif
+
 namespace esphome {
 
 #define LOG_PIN(prefix, pin) \
@@ -35,6 +42,7 @@ namespace esphome {
   }
 #define LOG_PIN_PATTERN "GPIO%u (Mode: %s%s)"
 #define LOG_PIN_ARGS(pin) (pin)->get_pin(), (pin)->get_pin_mode_name(), ((pin)->is_inverted() ? ", INVERTED" : "")
+
 
 /// Copy of GPIOPin that is safe to use from ISRs (with no virtual functions)
 class ISRInternalGPIOPin {
