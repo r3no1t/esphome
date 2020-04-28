@@ -1059,6 +1059,12 @@ output:
     id: dimmer1
     gate_pin: GPIO5
     zero_cross_pin: GPIO26
+  - platform: dimmer_output
+    pin_phase_cut: GPIO23
+    pin_phase_in: GPIO18
+    phase_delay: 1500us
+    hw_timer_id: 3
+    id: id25
 
 light:
   - platform: binary
