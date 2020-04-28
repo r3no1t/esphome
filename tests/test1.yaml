@@ -1520,6 +1520,20 @@ display:
   lambda: |-
     it.rectangle(0, 0, it.get_width(), it.get_height());
 
+touchscreen:
+- platform: stmpe811
+  id: my_touch
+  spi_id: spi_touch
+  cs_pin: 5
+  backlight_timeout: 30s
+  rotation: 0
+  pixel_x: 320
+  pixel_y: 240
+  limit_x_min: 460
+  limit_x_max: 3830
+  limit_y_min: 250
+  limit_y_max: 3810
+
 tm1651:
   id: tm1651_battery
   clk_pin: GPIO23
