@@ -173,6 +173,18 @@ void MQTTClientComponent::start_connect_() {
 
   this->mqtt_client_.setCredentials(username, password);
 
+#if defined (ASYNC_TCP_SSL_ENABLED) && defined (ASYNC_TCP_CERTIFICATE_ENABLED)
+  if (!this->ca_cert_.empty()) {
+    this->mqtt_client_.setSecure(true);
+    this->mqtt_client_.setRootCa(this->ca_cert_.c_str(), this->ca_cert_.length() + 1);
+  }
+  if (!this->client_cert_.empty() && !this->client_key_.empty()) {
+    this->mqtt_client_.setSecure(true);
+    this->mqtt_client_.setClientCert(this->client_cert_.c_str(), this->client_cert_.length() + 1);
+    this->mqtt_client_.setClientKey(this->client_key_.c_str(), this->client_key_.length() + 1);
+  }
+#endif
+
   this->mqtt_client_.setServer(this->ip_, this->credentials_.port);
   if (!this->last_will_.topic.empty()) {
     this->mqtt_client_.setWill(this->last_will_.topic.c_str(), this->last_will_.qos, this->last_will_.retain,

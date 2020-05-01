@@ -5,13 +5,13 @@ import esphome.config_validation as cv
 from esphome import automation
 from esphome.automation import Condition
 from esphome.components import logger
-from esphome.const import CONF_AVAILABILITY, CONF_BIRTH_MESSAGE, CONF_BROKER, CONF_CLIENT_ID, \
-    CONF_COMMAND_TOPIC, CONF_DISCOVERY, CONF_DISCOVERY_PREFIX, CONF_DISCOVERY_RETAIN, \
-    CONF_ID, CONF_KEEPALIVE, CONF_LEVEL, CONF_LOG_TOPIC, CONF_ON_JSON_MESSAGE, CONF_ON_MESSAGE, \
-    CONF_PASSWORD, CONF_PAYLOAD, CONF_PAYLOAD_AVAILABLE, CONF_PAYLOAD_NOT_AVAILABLE, CONF_PORT, \
-    CONF_QOS, CONF_REBOOT_TIMEOUT, CONF_RETAIN, CONF_SHUTDOWN_MESSAGE, CONF_SSL_FINGERPRINTS, \
-    CONF_STATE_TOPIC, CONF_TOPIC, CONF_TOPIC_PREFIX, CONF_TRIGGER_ID, CONF_USERNAME, \
-    CONF_WILL_MESSAGE
+from esphome.const import CONF_AVAILABILITY, CONF_BIRTH_MESSAGE, CONF_BROKER, CONF_CA_CERT, \
+    CONF_CLIENT_CERT, CONF_CLIENT_ID, CONF_CLIENT_KEY, CONF_COMMAND_TOPIC, CONF_DISCOVERY, \
+    CONF_DISCOVERY_PREFIX, CONF_DISCOVERY_RETAIN, CONF_ID, CONF_KEEPALIVE, CONF_LEVEL, \
+    CONF_LOG_TOPIC, CONF_ON_JSON_MESSAGE, CONF_ON_MESSAGE, CONF_PASSWORD, CONF_PAYLOAD, \
+    CONF_PAYLOAD_AVAILABLE, CONF_PAYLOAD_NOT_AVAILABLE, CONF_PORT, CONF_QOS, CONF_REBOOT_TIMEOUT, \
+    CONF_RETAIN, CONF_SHUTDOWN_MESSAGE, CONF_SSL_FINGERPRINTS, CONF_STATE_TOPIC, CONF_TOPIC, \
+    CONF_TOPIC_PREFIX, CONF_TRIGGER_ID, CONF_USERNAME, CONF_WILL_MESSAGE
 from esphome.core import coroutine_with_priority, coroutine, CORE
 
 DEPENDENCIES = ['network']
@@ -133,6 +133,9 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
         cv.Required(CONF_TOPIC): cv.subscribe_topic,
         cv.Optional(CONF_QOS, default=0): cv.mqtt_qos,
     }),
+    cv.Optional(CONF_CA_CERT): cv.string,
+    cv.Optional(CONF_CLIENT_CERT): cv.string,
+    cv.Optional(CONF_CLIENT_KEY): cv.string,
 }), validate_config)
 
 
@@ -165,6 +168,13 @@ def to_code(config):
     cg.add(var.set_password(config[CONF_PASSWORD]))
     if CONF_CLIENT_ID in config:
         cg.add(var.set_client_id(config[CONF_CLIENT_ID]))
+
+    if CONF_CA_CERT in config:
+        cg.add(var.set_ca_cert(config[CONF_CA_CERT]))
+    if CONF_CLIENT_CERT in config:
+        cg.add(var.set_client_cert(config[CONF_CLIENT_CERT]))
+    if CONF_CLIENT_KEY in config:
+        cg.add(var.set_client_key(config[CONF_CLIENT_KEY]))
 
     discovery = config[CONF_DISCOVERY]
     discovery_retain = config[CONF_DISCOVERY_RETAIN]
@@ -208,7 +218,6 @@ def to_code(config):
         for fingerprint in config[CONF_SSL_FINGERPRINTS]:
             arr = [cg.RawExpression("0x{}".format(fingerprint[i:i + 2])) for i in range(0, 40, 2)]
             cg.add(var.add_ssl_fingerprint(arr))
-        cg.add_build_flag('-DASYNC_TCP_SSL_ENABLED=1')
 
     cg.add(var.set_keep_alive(config[CONF_KEEPALIVE]))
 

@@ -212,6 +212,10 @@ class MQTTClientComponent : public Component {
   void set_password(const std::string &password) { this->credentials_.password = password; }
   void set_client_id(const std::string &client_id) { this->credentials_.client_id = client_id; }
 
+  void set_ca_cert(const std::string &ca_cert) { this->ca_cert_ = ca_cert; }
+  void set_client_cert(const std::string &client_cert) { this->client_cert_ = client_cert; }
+  void set_client_key(const std::string &client_key) { this->client_key_ = client_key; }
+
  protected:
   /// Reconnect to the MQTT broker if not already connected.
   void start_connect_();
@@ -231,6 +235,10 @@ class MQTTClientComponent : public Component {
   void resubscribe_subscriptions_();
 
   MQTTCredentials credentials_;
+  std::string ca_cert_;
+  std::string client_cert_;
+  std::string client_key_;
+
   /// The last will message. Disabled optional denotes it being default and
   /// an empty topic denotes the the feature being disabled.
   MQTTMessage last_will_;
