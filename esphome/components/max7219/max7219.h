@@ -17,7 +17,7 @@ class MAX7219Component;
 using max7219_writer_t = std::function<void(MAX7219Component &)>;
 
 class MAX7219Component : public PollingComponent,
-                         public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW,
+                         public spi::SPIDevice<spi::SPIComponent, spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW,
                                                spi::CLOCK_PHASE_LEADING, spi::DATA_RATE_1MHZ> {
  public:
   void set_writer(max7219_writer_t &&writer);

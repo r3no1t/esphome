@@ -165,13 +165,13 @@ class SPIComponent : public Component {
   uint32_t wait_cycle_;
 };
 
-template<SPIBitOrder BIT_ORDER, SPIClockPolarity CLOCK_POLARITY, SPIClockPhase CLOCK_PHASE, SPIDataRate DATA_RATE>
+template<class T, SPIBitOrder BIT_ORDER, SPIClockPolarity CLOCK_POLARITY, SPIClockPhase CLOCK_PHASE, SPIDataRate DATA_RATE>
 class SPIDevice {
  public:
   SPIDevice() = default;
-  SPIDevice(SPIComponent *parent, GPIOPin *cs) : parent_(parent), cs_(cs) {}
+  SPIDevice(T *parent, GPIOPin *cs) : parent_(parent), cs_(cs) {}
 
-  void set_spi_parent(SPIComponent *parent) { parent_ = parent; }
+  void set_spi_parent(T *parent) { parent_ = parent; }
   void set_cs_pin(GPIOPin *cs) { cs_ = cs; }
 
   void spi_setup() {
@@ -218,7 +218,7 @@ class SPIDevice {
   template<size_t N> void transfer_array(std::array<uint8_t, N> &data) { this->transfer_array(data.data(), N); }
 
  protected:
-  SPIComponent *parent_{nullptr};
+  T *parent_{nullptr};
   GPIOPin *cs_{nullptr};
 };
 

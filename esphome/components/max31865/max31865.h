@@ -25,7 +25,7 @@ enum MAX31865ConfigFilter {
 
 class MAX31865Sensor : public sensor::Sensor,
                        public PollingComponent,
-                       public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW,
+                       public spi::SPIDevice<spi::SPIComponent, spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW,
                                              spi::CLOCK_PHASE_TRAILING, spi::DATA_RATE_4MHZ> {
  public:
   void set_reference_resistance(float reference_resistance) { reference_resistance_ = reference_resistance; }
