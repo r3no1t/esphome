@@ -1,10 +1,10 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
-from esphome.components import cover
+from esphome.components import binary_sensor, cover
 from esphome.const import CONF_CLOSE_ACTION, CONF_CLOSE_DURATION, CONF_ID, CONF_OPEN_ACTION, \
     CONF_OPEN_DURATION, CONF_STOP_ACTION, CONF_ASSUMED_STATE, CONF_DIR_CHANGE_DELAY, \
-    CONF_TILT_DURATION, CONF_PUBLISH_INTERVAL
+    CONF_TILT_DURATION, CONF_PUBLISH_INTERVAL, CONF_MOTOR_STATUS
 
 time_based_ns = cg.esphome_ns.namespace('time_based')
 TimeBasedCover = time_based_ns.class_('TimeBasedCover', cover.Cover, cg.Component)
@@ -20,6 +20,8 @@ CONFIG_SCHEMA = cover.COVER_SCHEMA.extend({
 
     cv.Required(CONF_CLOSE_ACTION): automation.validate_automation(single=True),
     cv.Required(CONF_CLOSE_DURATION): cv.positive_time_period_milliseconds,
+
+    cv.Optional(CONF_MOTOR_STATUS): cv.use_id(binary_sensor.BinarySensor),
 
     cv.Optional(CONF_TILT_DURATION, default='0ms'): cv.positive_time_period_milliseconds,
     cv.Optional(CONF_PUBLISH_INTERVAL, default='1000ms'): cv.positive_time_period_milliseconds,
@@ -42,6 +44,10 @@ def to_code(config):
 
     cg.add(var.set_close_duration(config[CONF_CLOSE_DURATION]))
     yield automation.build_automation(var.get_close_trigger(), [], config[CONF_CLOSE_ACTION])
+
+    if CONF_MOTOR_STATUS in config:
+        motor_sensor = yield cg.get_variable(config[CONF_MOTOR_STATUS])
+        cg.add(var.set_motor_sensor(motor_sensor))
 
     cg.add(var.set_tilt_duration(config[CONF_TILT_DURATION]))
     cg.add(var.set_publish_interval(config[CONF_PUBLISH_INTERVAL]))

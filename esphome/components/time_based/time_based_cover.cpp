@@ -18,25 +18,49 @@ void TimeBasedCover::setup() {
   auto restore = this->restore_state_();
   if (restore.has_value()) {
     restore->apply(this);
+    ESP_LOGD(TAG, "restore POS:%.1fs TILT:%.1fs", this->position, this->tilt);
   } else {
     this->position = 0.5f;
+    ESP_LOGD(TAG, "set POS:%.1fs TILT:%.1fs", this->position, this->tilt);
   }
   this->start_next_operation_time_ = millis() + this->dir_change_delay_;
   this->target_position_ = this->position;
+  this->target_tilt_ = this->tilt;
+  this->stop_direction_();
 }
 
 void TimeBasedCover::loop() {
   const uint32_t now = millis();
 
-  if (this->current_operation != COVER_OPERATION_IDLE) {
+  if (this->perform_stop_) {
+    this->perform_stop_ = false;
+    this->stop_direction_();
+    this->publish_state();
+  }
+
+  if (this->current_operation != COVER_OPERATION_IDLE || (this->motor_sensor_ != nullptr && this->motor_sensor_->state)) {
     // delay next direction change as long as there is a movement
     this->start_next_operation_time_ = now + this->dir_change_delay_;
+  }
+
+  if (this->current_operation != COVER_OPERATION_IDLE && this->motor_sensor_ != nullptr &&
+      !this->motor_sensor_->state && ((this->motor_on_time + 500) <  now)) {
+    // motor stopped, update end position
+    if (this->current_operation == COVER_OPERATION_CLOSING) {
+      this->position = COVER_CLOSED;
+      this->tilt = COVER_CLOSED;
+    }
+    else if (this->current_operation == COVER_OPERATION_OPENING) {
+      this->position = COVER_OPEN;
+      this->tilt = COVER_OPEN;
+    }
   }
 
   if (!this->is_at_position_target_() || (this->supports_tilt_() && !this->is_at_tilt_target_())) {
     // target not yet reached check for a direction change and recompute position
     CoverOperation dir = evaluate_direction_();
     if (dir != this->current_operation) {
+      if (this->current_operation != COVER_OPERATION_IDLE) this->stop_direction_();
       this->start_direction_(dir);
     }
     else {
@@ -54,13 +78,15 @@ void TimeBasedCover::loop() {
     this->position = this->target_position_;
     this->tilt = this->target_tilt_;
     if (this->has_built_in_endstop_ &&
-        (this->target_position_ == COVER_OPEN || this->target_position_ == COVER_CLOSED)) {
-      // Don't trigger stop, let the cover stop by itself, use an endstop sensor to stop the motor
+        (((this->target_position_ == COVER_OPEN) && (!this->supports_tilt_() || this->target_tilt_ == COVER_OPEN)) ||
+         ((this->target_position_ == COVER_CLOSED) && (!this->supports_tilt_() || this->target_tilt_ == COVER_CLOSED)))) {
+      // Don't trigger stop, let the cover stop by itself, use an endstop sensor to stop the
+      // motor except it is a stop command
       this->current_operation = COVER_OPERATION_IDLE;
     }
     else {
       // target reached, stop movement
-      this->start_direction_(COVER_OPERATION_IDLE);
+      this->stop_direction_();
     }
     this->publish_state();
   }
@@ -94,16 +120,21 @@ CoverTraits TimeBasedCover::get_traits() {
 }
 
 void TimeBasedCover::control(const CoverCall &call) {
+  ESP_LOGD(TAG, "got call at POS:%.1fs TILT:%.1fs", this->position, this->tilt);
   if (call.get_stop()) {
+    ESP_LOGD(TAG, "  got STOP call");
     // let it stop with the next loops which checks for target position and tilt
     this->target_position_ = this->position;
     this->target_tilt_ = this->tilt;
+    this->perform_stop_ = true;
   }
   else if (call.get_position().has_value()) {
+    ESP_LOGD(TAG, "  got POS call to %.1fs", *call.get_position());
     this->target_position_ = *call.get_position();
     update_tilt_target_(call);
   }
   else if (this->supports_tilt_()) {
+    ESP_LOGD(TAG, "  got TILT call to %.1fs", *call.get_tilt());
     this->target_position_ = this->position;
     update_tilt_target_(call);
   }
@@ -112,13 +143,13 @@ void TimeBasedCover::control(const CoverCall &call) {
 void TimeBasedCover::update_tilt_target_(const CoverCall &call) {
   if (this->supports_tilt_()) {
     if (!call.get_tilt().has_value()) {
-      if (this->target_position_ == this->position) {
-        // no position change and no tilt specified
+      if ((this->target_position_ == this->position) && (this->position != COVER_CLOSED)) {
+        // no position change and no tilt specified and not at the bottom
         this->target_tilt_ = this->tilt;
       }
       else {
         // no tilt specified, use 100% if the target is up or 0% if the target is down
-        this->target_tilt_ = (this->target_position_ < this->position) ? COVER_CLOSED : COVER_OPEN;
+        this->target_tilt_ = (this->target_position_ <= this->position) ? COVER_CLOSED : COVER_OPEN;
       }
     }
     else {
@@ -173,9 +204,6 @@ void TimeBasedCover::start_direction_(CoverOperation dir) {
   }
   Trigger<> *trig;
   switch (dir) {
-    case COVER_OPERATION_IDLE:
-      trig = this->stop_trigger_;
-      break;
     case COVER_OPERATION_OPENING:
       trig = this->open_trigger_;
       break;
@@ -185,12 +213,20 @@ void TimeBasedCover::start_direction_(CoverOperation dir) {
     default:
       return;
   }
-  if (this->current_operation != COVER_OPERATION_IDLE || dir != COVER_OPERATION_IDLE) {
-    this->current_operation = dir;
-    this->stop_prev_trigger_();
-    trig->trigger();
-    this->prev_command_trigger_ = trig;
-  }
+  this->motor_on_time = now;
+  this->current_operation = dir;
+  this->stop_prev_trigger_();
+  trig->trigger();
+  this->prev_command_trigger_ = trig;
+}
+
+void TimeBasedCover::stop_direction_() {
+  this->motor_on_time = 0;
+  Trigger<> *trig = this->stop_trigger_;
+  this->current_operation = COVER_OPERATION_IDLE;
+  this->stop_prev_trigger_();
+  trig->trigger();
+  this->prev_command_trigger_ = trig;
 }
 
 void TimeBasedCover::recompute_position_() {

@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/automation.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/cover/cover.h"
 
 namespace esphome {
@@ -25,12 +26,14 @@ class TimeBasedCover : public cover::Cover, public Component {
   void set_assumed_state(bool value) { this->assumed_state_ = value; }
   void set_publish_interval(uint32_t interval) { this->publish_interval_ = interval; }
   void set_dir_change_delay(uint32_t delay) { this->dir_change_delay_ = delay; }
+  void set_motor_sensor(binary_sensor::BinarySensor *motor_sensor) { this->motor_sensor_ = motor_sensor; }
 
  protected:
   void control(const cover::CoverCall &call) override;
   void stop_prev_trigger_();
   bool is_at_position_target_() const;
   void start_direction_(cover::CoverOperation dir);
+  void stop_direction_();
   void recompute_position_();
   bool supports_tilt_() const { return this->tilt_duration_ != 0; }
   void update_tilt_target_(const cover::CoverCall &call);
@@ -47,6 +50,7 @@ class TimeBasedCover : public cover::Cover, public Component {
   Trigger<> *prev_command_trigger_{nullptr};
   uint32_t last_recompute_time_{0};
   uint32_t last_publish_time_{0};
+  uint32_t motor_on_time{0};
   float target_position_{0};
   float target_tilt_{0};
   bool has_built_in_endstop_{false};
@@ -57,7 +61,8 @@ class TimeBasedCover : public cover::Cover, public Component {
   cover::CoverOperation delayed_operation_{cover::COVER_OPERATION_IDLE};
   float tilt_delta_{0};
   float position_delta_{0};
-
+  bool perform_stop_{0};
+  binary_sensor::BinarySensor *motor_sensor_{nullptr};
 };
 
 }  // namespace time_based
