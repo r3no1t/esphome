@@ -12,11 +12,12 @@
 namespace esphome {
 namespace pid {
 
-class PIDClimate : public climate::Climate, public Component {
+class PIDClimate : public climate::Climate, public PollingComponent {
  public:
   PIDClimate() = default;
   void setup() override;
   void dump_config() override;
+  void update() override;
 
   void set_sensor(sensor::Sensor *sensor) { sensor_ = sensor; }
   void set_cool_output(output::FloatOutput *cool_output) { cool_output_ = cool_output; }
@@ -65,6 +66,7 @@ class PIDClimate : public climate::Climate, public Component {
   float default_target_temperature_;
   std::unique_ptr<PIDAutotuner> autotuner_;
   bool do_publish_ = false;
+  bool process_call_ = false;
 };
 
 template<typename... Ts> class PIDAutotuneAction : public Action<Ts...> {

@@ -11,7 +11,6 @@ void PIDClimate::setup() {
     // only publish if state/current temperature has changed in two digits of precision
     this->do_publish_ = roundf(state * 100) != roundf(this->current_temperature * 100);
     this->current_temperature = state;
-    this->update_pid_();
   });
   this->current_temperature = this->sensor_->state;
   // restore set points
@@ -24,18 +23,32 @@ void PIDClimate::setup() {
     this->target_temperature = this->default_target_temperature_;
   }
 }
+
+void PIDClimate::update() {
+  if (this->do_publish_) {
+    this->update_pid_();
+    this->do_publish_ = false;
+    ESP_LOGD(TAG, "sensor changed: %f", this->current_temperature);
+  }
+  if (this->process_call_) {
+    this->process_call_ = false;
+
+    // If switching to non-auto mode, set output immediately
+    if (this->mode != climate::CLIMATE_MODE_AUTO)
+      this->handle_non_auto_mode_();
+
+    this->publish_state();
+  }
+}
+
 void PIDClimate::control(const climate::ClimateCall &call) {
   if (call.get_mode().has_value())
     this->mode = *call.get_mode();
   if (call.get_target_temperature().has_value())
     this->target_temperature = *call.get_target_temperature();
-
-  // If switching to non-auto mode, set output immediately
-  if (this->mode != climate::CLIMATE_MODE_AUTO)
-    this->handle_non_auto_mode_();
-
-  this->publish_state();
+  this->process_call_ = true;
 }
+
 climate::ClimateTraits PIDClimate::traits() {
   auto traits = climate::ClimateTraits();
   traits.set_supports_current_temperature(true);
@@ -46,6 +59,7 @@ climate::ClimateTraits PIDClimate::traits() {
   traits.set_supports_action(true);
   return traits;
 }
+
 void PIDClimate::dump_config() {
   LOG_CLIMATE("", "PID Climate", this);
   ESP_LOGCONFIG(TAG, "  Control Parameters:");
@@ -55,6 +69,7 @@ void PIDClimate::dump_config() {
     this->autotuner_->dump_config();
   }
 }
+
 void PIDClimate::write_output_(float value) {
   this->output_value_ = value;
 
@@ -87,6 +102,7 @@ void PIDClimate::write_output_(float value) {
   }
   this->pid_computed_callback_.call();
 }
+
 void PIDClimate::handle_non_auto_mode_() {
   // in non-auto mode, switch directly to appropriate action
   //  - HEAT mode / COOL mode -> Output at ±100%
@@ -101,6 +117,7 @@ void PIDClimate::handle_non_auto_mode_() {
     assert(false);
   }
 }
+
 void PIDClimate::update_pid_() {
   float value;
   if (isnan(this->current_temperature) || isnan(this->target_temperature)) {
@@ -137,6 +154,7 @@ void PIDClimate::update_pid_() {
   if (this->do_publish_)
     this->publish_state();
 }
+
 void PIDClimate::start_autotune(std::unique_ptr<PIDAutotuner> &&autotune) {
   this->autotuner_ = std::move(autotune);
   float min_value = this->supports_cool_() ? -1.0f : 0.0f;

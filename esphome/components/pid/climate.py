@@ -5,7 +5,7 @@ from esphome.components import climate, sensor, output
 from esphome.const import CONF_ID, CONF_SENSOR
 
 pid_ns = cg.esphome_ns.namespace('pid')
-PIDClimate = pid_ns.class_('PIDClimate', climate.Climate, cg.Component)
+PIDClimate = pid_ns.class_('PIDClimate', climate.Climate, cg.PollingComponent)
 PIDAutotuneAction = pid_ns.class_('PIDAutotuneAction', automation.Action)
 
 CONF_DEFAULT_TARGET_TEMPERATURE = 'default_target_temperature'
@@ -35,7 +35,7 @@ CONFIG_SCHEMA = cv.All(climate.CLIMATE_SCHEMA.extend({
         cv.Optional(CONF_MIN_INTEGRAL, default=-1): cv.float_,
         cv.Optional(CONF_MAX_INTEGRAL, default=1): cv.float_,
     }),
-}), cv.has_at_least_one_key(CONF_COOL_OUTPUT, CONF_HEAT_OUTPUT))
+}).extend(cv.polling_component_schema('1s')), cv.has_at_least_one_key(CONF_COOL_OUTPUT, CONF_HEAT_OUTPUT))
 
 
 def to_code(config):
