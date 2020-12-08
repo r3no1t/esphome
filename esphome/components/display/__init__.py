@@ -1,8 +1,10 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import core, automation
+from esphome.components import touchscreen
 from esphome.automation import maybe_simple_id
-from esphome.const import CONF_ID, CONF_LAMBDA, CONF_PAGES, CONF_ROTATION
+from esphome.const import CONF_ID, CONF_LAMBDA, CONF_PAGES, CONF_ROTATION, \
+        CONF_TOUCHSCREEN, CONF_CONTAINERS, CONF_CONTAINER
 from esphome.core import coroutine, coroutine_with_priority
 
 IS_PLATFORM_COMPONENT = True
@@ -15,6 +17,15 @@ DisplayBufferRef = DisplayBuffer.operator('ref')
 DisplayPageShowAction = display_ns.class_('DisplayPageShowAction', automation.Action)
 DisplayPageShowNextAction = display_ns.class_('DisplayPageShowNextAction', automation.Action)
 DisplayPageShowPrevAction = display_ns.class_('DisplayPageShowPrevAction', automation.Action)
+Container = display_ns.class_('Container')
+Label = display_ns.class_('Label')
+Icon = display_ns.class_('Icon')
+Button = display_ns.class_('Button')
+Image = display_ns.class_('Image')
+Font = display_ns.class_('Font')
+Slider = display_ns.class_('Slider')
+Glyph = display_ns.class_('Glyph')
+
 
 DISPLAY_ROTATIONS = {
     0: display_ns.DISPLAY_ROTATION_0_DEGREES,
@@ -37,9 +48,13 @@ BASIC_DISPLAY_SCHEMA = cv.Schema({
 
 FULL_DISPLAY_SCHEMA = BASIC_DISPLAY_SCHEMA.extend({
     cv.Optional(CONF_ROTATION): validate_rotation,
+    cv.Optional(CONF_TOUCHSCREEN): cv.use_id(touchscreen.Touchscreen),
     cv.Optional(CONF_PAGES): cv.All(cv.ensure_list({
         cv.GenerateID(): cv.declare_id(DisplayPage),
         cv.Required(CONF_LAMBDA): cv.lambda_,
+    }), cv.Length(min=1)),
+    cv.Optional(CONF_CONTAINERS): cv.All(cv.ensure_list({
+        cv.Required(CONF_CONTAINER): cv.use_id(Container),
     }), cv.Length(min=1)),
 })
 
@@ -56,6 +71,14 @@ def setup_display_core_(var, config):
             page = cg.new_Pvariable(conf[CONF_ID], lambda_)
             pages.append(page)
         cg.add(var.set_pages(pages))
+    if CONF_CONTAINERS in config:
+        containers = []
+        for conf in config[CONF_CONTAINERS]:
+            container = yield cg.get_variable(conf[CONF_CONTAINER])
+            containers.append(container)
+        cg.add(var.set_containers(containers))
+    touchscrn = yield cg.get_variable(config[CONF_TOUCHSCREEN])
+    cg.add(var.set_touchscreen(touchscrn))
 
 
 @coroutine

@@ -10,9 +10,6 @@ from esphome.core import CORE, HexInt
 DEPENDENCIES = ['display']
 MULTI_CONF = True
 
-Font = display.display_ns.class_('Font')
-Glyph = display.display_ns.class_('Glyph')
-
 
 def validate_glyphs(value):
     if isinstance(value, list):
@@ -67,7 +64,7 @@ DEFAULT_GLYPHS = ' !"%()+,-.:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmn
 CONF_RAW_DATA_ID = 'raw_data_id'
 
 FONT_SCHEMA = cv.Schema({
-    cv.Required(CONF_ID): cv.declare_id(Font),
+    cv.Required(CONF_ID): cv.declare_id(display.Font),
     cv.Required(CONF_FILE): validate_truetype_file,
     cv.Optional(CONF_GLYPHS, default=DEFAULT_GLYPHS): validate_glyphs,
     cv.Optional(CONF_SIZE, default=20): cv.int_range(min=1),
@@ -110,6 +107,6 @@ def to_code(config):
 
     glyphs = []
     for glyph in config[CONF_GLYPHS]:
-        glyphs.append(Glyph(glyph, prog_arr, *glyph_args[glyph]))
+        glyphs.append(display.Glyph(glyph, prog_arr, *glyph_args[glyph]))
 
     cg.new_Pvariable(config[CONF_ID], glyphs, ascent, ascent + descent)

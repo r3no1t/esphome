@@ -986,6 +986,46 @@ def returning_lambda(value):
     return value
 
 
+def is_color_invalid(value):
+    return value < 0 or value > 255
+
+
+def color_rgb(value):
+    if isinstance(value, list):
+        if len(value) != 3:
+            raise Invalid("Color RGB must have a length of three, not {}".format(len(value)))
+        try:
+            r, g, b = int(value[0]), int(value[1]), int(value[2])
+        except ValueError:
+            raise Invalid("Color RGB attributes r, g, b must be integers")
+        if is_color_invalid(r) or is_color_invalid(g) or is_color_invalid(b):
+            raise Invalid("r, g and b must be between 0 and 255")
+        return [r, g, b]
+    value = string(value)
+    match = re.match(r"\s*([0-9]+)\s*[,]\s*([0-9]+)\s*[,]\s*([0-9]+)\s*", value)
+    if not match:
+        raise Invalid("Invalid value '{}' for color_rgb. Only r,g,b is allowed.")
+    return color_rgb([match.group(1), match.group(2), match.group(3)])
+
+
+def position(value):
+    if isinstance(value, list):
+        if len(value) != 4:
+            raise Invalid("Positions must have a length of four, not {}".format(len(value)))
+        try:
+            x, y, width, height = int(value[0]), int(value[1]), int(value[2]), int(value[3])
+        except ValueError:
+            raise Invalid("Position attributes x, y, width and height must be integers")
+        if x < 0 or y < 0 or width <= 0 or height <= 0:
+            raise Invalid("x and y must not be negative, width and height must at least be 1")
+        return [x, y, width, height]
+    value = string(value)
+    match = re.match(r"\s*([0-9]+)\s*[,]\s*([0-9]+)\s*[,]\s*([0-9]+)\s*[,]\s*([0-9]+)\s*", value)
+    if not match:
+        raise Invalid("Invalid value '{}' for position. Only x,y,width,height is allowed.")
+    return position([match.group(1), match.group(2), match.group(3), match.group(4)])
+
+
 def dimensions(value):
     if isinstance(value, list):
         if len(value) != 2:

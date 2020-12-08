@@ -1,8 +1,11 @@
 #pragma once
 
+#include "esphome/core/automation.h"
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
-#include "esphome/core/automation.h"
+#include "esphome/core/helpers.h"
+#include "esphome/core/log.h"
+#include "esphome/components/touchscreen/touchscreen.h"
 
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
@@ -78,6 +81,7 @@ class Font;
 class Image;
 class DisplayBuffer;
 class DisplayPage;
+class Drawable;
 
 using display_writer_t = std::function<void(DisplayBuffer &)>;
 
@@ -123,6 +127,14 @@ class DisplayBuffer {
 
   /// Fill a circle centered around [center_x,center_y] with the radius radius with the given color.
   void filled_circle(int center_x, int center_y, int radius, int color = COLOR_ON);
+
+  void round_rectangle(int x, int y, int width, int height, int radius, int color = COLOR_ON);
+
+  void filled_round_rectangle(int x, int y, int width, int height, int radius, int color = COLOR_ON);
+
+  void circle_corner(int x0, int y0, int radius, int corner, int color = COLOR_ON);
+
+  void fill_circle_corners(int x0, int y0, int radius, int corner, int delta, int color = COLOR_ON);
 
   /** Print `text` with the anchor point at [x,y] with `font`.
    *
@@ -261,6 +273,7 @@ class DisplayBuffer {
 
   /// Draw the `image` with the top-left corner at [x,y] to the screen.
   void image(int x, int y, Image *image);
+  void image_section(int x, int y, int x1, int y1, int x2, int y2, Image *image);
 
   /** Get the text bounds of the given string.
    *
@@ -289,6 +302,14 @@ class DisplayBuffer {
   /// Internal method to set the display rotation with.
   void set_rotation(DisplayRotation rotation);
 
+  void set_touchscreen(touchscreen::Touchscreen *touchscreen) { this->touchscreen_ = touchscreen; }
+
+  touchscreen::Touchscreen *get_touchscreen() { return this->touchscreen_; }
+
+  void set_containers(std::vector<Drawable *> containers) { this->containers_ = containers; }
+
+  void repaint() { this->repaint_ = true; }
+
  protected:
   void vprintf_(int x, int y, Font *font, int color, TextAlign align, const char *format, va_list arg);
 
@@ -306,87 +327,12 @@ class DisplayBuffer {
   DisplayRotation rotation_{DISPLAY_ROTATION_0_DEGREES};
   optional<display_writer_t> writer_{};
   DisplayPage *page_{nullptr};
+  std::vector<Drawable *> containers_;
+  touchscreen::Touchscreen *touchscreen_{nullptr};
+  bool repaint_{false};
 };
 
-class DisplayPage {
- public:
-  DisplayPage(const display_writer_t &writer);
-  void show();
-  void show_next();
-  void show_prev();
-  void set_parent(DisplayBuffer *parent);
-  void set_prev(DisplayPage *prev);
-  void set_next(DisplayPage *next);
-  const display_writer_t &get_writer() const;
 
- protected:
-  DisplayBuffer *parent_;
-  display_writer_t writer_;
-  DisplayPage *prev_{nullptr};
-  DisplayPage *next_{nullptr};
-};
-
-class Glyph {
- public:
-  Glyph(const char *a_char, const uint8_t *data_start, uint32_t offset, int offset_x, int offset_y, int width,
-        int height);
-
-  bool get_pixel(int x, int y) const;
-
-  const char *get_char() const;
-
-  bool compare_to(const char *str) const;
-
-  int match_length(const char *str) const;
-
-  void scan_area(int *x1, int *y1, int *width, int *height) const;
-
- protected:
-  friend Font;
-  friend DisplayBuffer;
-
-  const char *char_;
-  const uint8_t *data_;
-  int offset_x_;
-  int offset_y_;
-  int width_;
-  int height_;
-};
-
-class Font {
- public:
-  /** Construct the font with the given glyphs.
-   *
-   * @param glyphs A vector of glyphs, must be sorted lexicographically.
-   * @param baseline The y-offset from the top of the text to the baseline.
-   * @param bottom The y-offset from the top of the text to the bottom (i.e. height).
-   */
-  Font(std::vector<Glyph> &&glyphs, int baseline, int bottom);
-
-  int match_next_glyph(const char *str, int *match_length);
-
-  void measure(const char *str, int *width, int *x_offset, int *baseline, int *height);
-
-  const std::vector<Glyph> &get_glyphs() const;
-
- protected:
-  std::vector<Glyph> glyphs_;
-  int baseline_;
-  int bottom_;
-};
-
-class Image {
- public:
-  Image(const uint8_t *data_start, int width, int height);
-  bool get_pixel(int x, int y) const;
-  int get_width() const;
-  int get_height() const;
-
- protected:
-  int width_;
-  int height_;
-  const uint8_t *data_start_;
-};
 
 template<typename... Ts> class DisplayPageShowAction : public Action<Ts...> {
  public:
